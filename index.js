@@ -10,29 +10,6 @@ app.use(cors())
 app.use(express.json())
 app.use(express.static('dist'))
 
-const password = process.argv[2]
-
-const url = `mongodb+srv://abisheksamuelphone:${password}@cluster0.uznnsuj.mongodb.net/phonebookbackendPractice?retryWrites=true&w=majority&appName=Cluster0`
-
-mongoose.set('strictQuery', false)
-
-mongoose.connect(url)
-
-const personSchema = new mongoose.Schema({
-  name: String,
-  number: String
-})
-
-personSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
-
-const Person = mongoose.model('Person', personSchema)
-
 const requestLogger = (request, response, next) => {
   console.log('Method:', request.method)
   console.log('Path:  ', request.path)
@@ -42,28 +19,28 @@ const requestLogger = (request, response, next) => {
 }
 app.use(requestLogger)
 
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+// let persons = [
+//     { 
+//       "id": "1",
+//       "name": "Arto Hellas", 
+//       "number": "040-123456"
+//     },
+//     { 
+//       "id": "2",
+//       "name": "Ada Lovelace", 
+//       "number": "39-44-5323523"
+//     },
+//     { 
+//       "id": "3",
+//       "name": "Dan Abramov", 
+//       "number": "12-43-234345"
+//     },
+//     { 
+//       "id": "4",
+//       "name": "Mary Poppendieck", 
+//       "number": "39-23-6423122"
+//     }
+// ]
 
 app.get('/', (request, response) => {
   response.send('home route')
@@ -76,55 +53,56 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/api/persons/info', (request, response) => {
-  response.json(`Phonebook has info for ${persons.length} people`)
+  Person.countDocuments({}).then(count => {
+    response.json(`Phonebook has info for ${count} members`)
+  }).catch(error => {
+    console.error(error.message);
+    response.status(500).json({ error: 'Failed to get count' })
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  const person = persons.find(person => person.id === id)
-  
-  if (person) {
+  Person.findById(request.params.id).then(person => {
     response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  }).catch(error => {
+    console.error(error.message)
+  })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = request.params.id
+// app.delete('/api/persons/:id', (request, response) => {
+//   const id = request.params.id
 
-  persons = persons.filter(person => person.id !== id)
+//   persons = persons.filter(person => person.id !== id)
 
-  response.status(204).end()
-})
+//   response.status(204).end()
+// })
 
-const generateId = () => {
-  const randomId = Math.floor(Math.random() * 1000)
-  return String(randomId)
-}
+// const generateId = () => {
+//   const randomId = Math.floor(Math.random() * 1000)
+//   return String(randomId)
+// }
 
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  if (!body.name || !body.number) {
-    return response.status(400).json({ 
-      error: 'content missing' 
-    })
-  } else if (persons.some(person => person.name === body.name)) {
-    return response.status(400).json({
-      error: `${body.name} already in phonebook`
-    })
-  }
+  // if (!body.name || !body.number) {
+  //   return response.status(400).json({ 
+  //     error: 'content missing' 
+  //   })
+  // } else if (persons.some(person => person.name === body.name)) {
+  //   return response.status(400).json({
+  //     error: `${body.name} already in phonebook`
+  //   })
+  // }
 
-  const person = {
-    id: generateId(),
+  const person = new Person ({
     name: body.name,
     number: body.number
-  }
+  })
 
-  persons = persons.concat(person)
-
-  response.json(person)
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
 })
 
 const unknownEndpoint = (request, response) => {
