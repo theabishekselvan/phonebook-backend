@@ -1,11 +1,35 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const mongoose = require('mongoose')
 
 app.use(cors())
 
 app.use(express.json())
 app.use(express.static('dist'))
+
+const password = process.argv[2]
+
+const url = `mongodb+srv://abisheksamuelphone:${password}@cluster0.uznnsuj.mongodb.net/phonebookbackendPractice?retryWrites=true&w=majority&appName=Cluster0`
+
+mongoose.set('strictQuery', false)
+
+mongoose.connect(url)
+
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String
+})
+
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+const Person = mongoose.model('Person', personSchema)
 
 const requestLogger = (request, response, next) => {
   console.log('Method:', request.method)
@@ -44,7 +68,9 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then(people => {
+    response.json(people)
+  })
 })
 
 app.get('/api/persons/info', (request, response) => {
