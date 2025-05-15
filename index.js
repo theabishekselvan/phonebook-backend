@@ -3,7 +3,6 @@ const express = require('express')
 const app = express()
 const Person = require('./models/person')
 const cors = require('cors')
-const mongoose = require('mongoose')
 
 app.use(cors())
 
@@ -56,7 +55,7 @@ app.get('/api/persons/info', (request, response) => {
   Person.countDocuments({}).then(count => {
     response.json(`Phonebook has info for ${count} members`)
   }).catch(error => {
-    console.error(error.message);
+    console.error(error.message)
     response.status(500).json({ error: 'Failed to get count' })
   })
 })
@@ -143,5 +142,5 @@ app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`)
 })
